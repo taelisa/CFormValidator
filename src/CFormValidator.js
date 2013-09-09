@@ -23,12 +23,7 @@
 			return;
 		}
 
-		// ToDo: attribute form[remoteurl] and elem[uid]
-
 		this.form.noValidate = true;
-
-		// ToDo: dynamic remote checks activation
-		this.remoteUrl = this.form.getAttribute( ATTR_PREFIX + 'remote' ) || null;
 
 		var submitBtns = this.form.querySelectorAll( '[type=submit]' ),
 			withMatch = this.form.querySelectorAll( '[' + ATTR_PREFIX + 'match]' ),
@@ -48,7 +43,7 @@
 			var result = self.isFormValidLocally();
 
 			if ( result.valid ) {
-				if ( self.remoteUrl && withRemote.length > 0 ) {
+				if ( self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && withRemote.length > 0 ) {
 					var postData = [],
 						i;
 
@@ -71,7 +66,7 @@
 						postData.push( encodeURIComponent( field.name ) + '=' + encodeURIComponent( field.value ) );
 					}
 
-					doXHRRequest( formXHR, self.remoteUrl, postData, function( json ) {
+					doXHRRequest( formXHR, self.form.getAttribute( ATTR_PREFIX + 'remoteurl' ), postData, function( json ) {
 						var valid = true,
 							invalidFields = [],
 							i;
@@ -139,7 +134,7 @@
 			var field = e.target || e.srcElement,
 				i;
 
-			if ( self.isFieldValid( field ) && field.value && self.remoteUrl && field.hasAttribute( ATTR_PREFIX + 'remote' ) ) {
+			if ( self.isFieldValid( field ) && field.value && self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && field.hasAttribute( ATTR_PREFIX + 'remote' ) ) {
 				var xhr,
 					postData = [encodeURIComponent( field.name ) + '=' + encodeURIComponent( field.value )],
 					i = withUid.length;
@@ -157,7 +152,7 @@
 					field.xhr = xhr;
 				}
 
-				doXHRRequest( xhr, self.remoteUrl, postData, function( json ) {
+				doXHRRequest( xhr, self.form.getAttribute( ATTR_PREFIX + 'remoteurl' ), postData, function( json ) {
 					field.xhr = undefined;
 
 					( json && json[field.name] === true )
