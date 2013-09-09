@@ -202,10 +202,11 @@
 			var max = field.getAttribute( 'max' ),
 				type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase();
 
-			if ( type === 'number' ) {
-				if ( parseFloat( field.value ) > parseFloat( max ) ) {
-					return false;
-				}
+			if ( type === 'date' ) {
+				// ToDo
+			}
+			else if ( parseFloat( field.value ) > parseFloat( max ) ) {
+				return false;
 			}
 
 			return true;
@@ -214,10 +215,11 @@
 			var min = field.getAttribute( 'min' ),
 				type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase();
 
-			if ( type === 'number' ) {
-				if ( parseFloat( field.value ) < parseFloat( min ) ) {
-					return false;
-				}
+			if ( type === 'date' ) {
+				// ToDo
+			}
+			else if ( parseFloat( field.value ) < parseFloat( min ) ) {
+				return false;
 			}
 
 			return true;
@@ -283,10 +285,11 @@
 				return true;
 			}
 
-			if ( type === 'number' ) {
-				if ( doModule( parseFloat( field.value ), parseFloat( step ) ) !== 0 ) {
-					return false;
-				}
+			if ( type === 'date' ) {
+				// ToDo
+			}
+			else if ( doModule( parseFloat( field.value ), parseFloat( step ) ) !== 0 ) {
+				return false;
 			}
 
 			return true;
@@ -437,7 +440,7 @@
 		}
 	}
 
-	CFormValidator.prototype._isValidDate = function( val ) {
+	CFormValidator._isValidDate = function( val ) {
 		val = val.split( '-' );
 
 		if ( val.length !== 3 ) {

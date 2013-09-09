@@ -8,7 +8,7 @@
 	<body>
 		<div class="container">
 			<h1>CFormValidator example</h1>
-			<form id="theForm" class="form-horizontal" autocomplete="off">
+			<form id="theForm" class="form-horizontal">
 				<fieldset>
 					<legend>The Form</legend>
 					<div class="control-group">
@@ -42,14 +42,28 @@
 					<div class="control-group">
 						<label class="control-label">Euros for the puppy</label>
 						<div class="controls">
-							<input type="number" data-cform-pattern="price" name="puppy" placeholder="15.0" title="Please insert a valid euros amount" max="50.50"> (maximum 50.50)
+							<input type="text" data-cform-pattern="price" name="puppy" placeholder="15.0" title="Please insert a valid euros amount" max="50.50"> (maximum 50.50)
 							<span class="help-inline"></span>
 						</div>
 					</div>
 					<div class="control-group">
 						<label class="control-label">Only digits please</label>
 						<div class="controls">
-							<input type="number" data-cform-pattern="digits" name="digits" placeholder="280" title="Please insert an integer multiple of 4" step="4"> (multiple of 4)
+							<input type="text" data-cform-pattern="digits" name="digits" placeholder="280" title="Please insert an integer multiple of 4" step="4"> (multiple of 4)
+							<span class="help-inline"></span>
+						</div>
+					</div>
+					<div class="control-group">
+						<label class="control-label">Date of a good day *</label>
+						<div class="controls">
+							<input type="date" name="goodday" title="Please insert a valid date" required> (YYYY-MM-DD)
+							<span class="help-inline"></span>
+						</div>
+					</div>
+					<div class="control-group">
+						<label class="control-label">A day in 2012</label>
+						<div class="controls">
+							<input type="date" name="day2012" title="Please insert a valid date in 2012" min="2012-01-01" max="2012-12-31"> (2012-MM-DD)
 							<span class="help-inline"></span>
 						</div>
 					</div>
@@ -73,7 +87,10 @@
 			new CFormValidator({
 				form: 'theForm',
 				onValidForm: function() {
-					console.log('The form is valid!');
+					console.log('The form is valid! :)');
+				},
+				onInvalidForm: function() {
+					console.log('The form is not valid! :(');
 				},
 				onValidField: function(field) {
 					$(field).closest('.control-group').removeClass('error');
