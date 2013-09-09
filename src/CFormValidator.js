@@ -119,7 +119,7 @@
 				attr = ATTR_PREFIX + 'previousvalue',
 				type = elem.type;
 
-			if ( /^(input|select|textarea)$/i.test( elem.nodeName ) && !elem.hasAttribute( 'readonly' ) ) {
+			if ( /^(input|select|textarea)$/i.test( elem.nodeName ) && !elem.readOnly ) {
 				if ( e.type === 'beforeactivate' ) {
 					elem.setAttribute( attr, elem.value );
 				}
@@ -203,6 +203,30 @@
 		match: function( field1, field2 ) {
 			return field1.value === field2.value;
 		},
+		max: function( field ) {
+			var max = field.getAttribute( 'max' ),
+				type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase();
+
+			if ( type === 'number' ) {
+				if ( parseFloat( field.value ) > parseFloat( max ) ) {
+					return false;
+				}
+			}
+
+			return true;
+		},
+		min: function( field ) {
+			var min = field.getAttribute( 'min' ),
+				type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase();
+
+			if ( type === 'number' ) {
+				if ( parseFloat( field.value ) < parseFloat( min ) ) {
+					return false;
+				}
+			}
+
+			return true;
+		},
 		required: function( field, form ) {
 			var result;
 
@@ -255,6 +279,22 @@
 			return ( CFormValidator._patterns.hasOwnProperty( pattern ) )
 				? CFormValidator._patterns[pattern].test( field.value )
 				: new RegExp( '^' + pattern + '$' ).test( field.value );
+		},
+		step: function( field ) {
+			var step = field.getAttribute( 'step' ),
+				type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase();
+
+			if ( step.toLowerCase() === 'any' ) {
+				return true;
+			}
+
+			if ( type === 'number' ) {
+				if ( doModule( parseFloat( field.value ), parseFloat( step ) ) !== 0 ) {
+					return false;
+				}
+			}
+
+			return true;
 		},
 		type: function( field ) {
 			var type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase();
@@ -354,43 +394,19 @@
 			result = false;
 		}
 
-		if ( result && field.hasAttribute( 'min' ) ) {
-			var min = field.getAttribute( 'min' );
-
-			if ( type === 'number' ) {
-				var value = parseFloat( field.value );
-
-				if ( value < parseFloat( min ) ) {
-					errorType = 'min';
-					result = false;
-				}
-			}
+		if ( result && field.hasAttribute( 'min' ) && !CFormValidator._controls.min( field ) ) {
+			errorType = 'min';
+			result = false;
 		}
 
-		if ( result && field.hasAttribute( 'max' ) ) {
-			var max = field.getAttribute( 'max' );
-
-			if ( type === 'number' ) {
-				var value = parseFloat( field.value );
-
-				if ( value > parseFloat( max ) ) {
-					errorType = 'max';
-					result = false;
-				}
-			}
+		if ( result && field.hasAttribute( 'max' ) && !CFormValidator._controls.max( field ) ) {
+			errorType = 'max';
+			result = false;
 		}
 
-		if ( result && field.hasAttribute( 'step' ) && field.getAttribute( 'step' ).toLowerCase() !== 'any' ) {
-			var step = field.getAttribute( 'step' );
-
-			if ( type === 'number' ) {
-				var value = parseFloat( field.value );
-
-				if ( doModule( value, parseFloat( step ) ) !== 0 ) {
-					errorType = 'step';
-					result = false;
-				}
-			}
+		if ( result && field.hasAttribute( 'step' ) && !CFormValidator._controls.step( field ) ) {
+			errorType = 'step';
+			result = false;
 		}
 
 		if ( result ) {
@@ -411,7 +427,7 @@
 		for ( i = 0; i < fields.length; i++ ) {
 			field = fields[i];
 
-			if ( field.disabled || isNotRelevantField( field ) ) {
+			if ( field.disabled || field.readOnly || field.nodeName.toLowerCase() === 'fieldset' || /^(button|hidden|reset|submit)$/.test( field.type ) ) {
 				continue;
 			}
 
@@ -469,25 +485,6 @@
 		};
 
 		xhr.send( postData.length? postData.join( '&' ) : null );
-	}
-
-	function isNotRelevantField( field ) {
-		var notRelevant = false;
-
-		if ( field.nodeName.toLowerCase() === 'fieldset' ) {
-			notRelevant = true;
-		}
-		else {
-			switch ( field.type ) {
-				case 'button':
-				case 'hidden':
-				case 'reset':
-				case 'submit':
-					notRelevant = true;
-			}
-		}
-
-		return notRelevant;
 	}
 
 	function doModule( num, mod ) {
