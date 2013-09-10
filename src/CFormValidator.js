@@ -209,26 +209,20 @@
 				type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase();
 
 			if ( type === 'date' ) {
-				// ToDo
-			}
-			else if ( parseFloat( field.value ) > parseFloat( max ) ) {
-				return false;
+				return getDate( field.value ) <= getDate( max );
 			}
 
-			return true;
+			return parseFloat( field.value ) <= parseFloat( max );
 		},
 		min: function( field ) {
 			var min = field.getAttribute( 'min' ),
 				type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase();
 
 			if ( type === 'date' ) {
-				// ToDo
-			}
-			else if ( parseFloat( field.value ) < parseFloat( min ) ) {
-				return false;
+				return getDate( field.value ) >= getDate( min );
 			}
 
-			return true;
+			return parseFloat( field.value ) >= parseFloat( min );
 		},
 		required: function( field, form ) {
 			var result;
@@ -293,12 +287,10 @@
 
 			if ( type === 'date' ) {
 				// ToDo
-			}
-			else if ( doModule( parseFloat( field.value ), parseFloat( step ) ) !== 0 ) {
-				return false;
+				return true;
 			}
 
-			return true;
+			return doModule( parseFloat( field.value ), parseFloat( step ) ) !== 0;
 		},
 		type: function( field ) {
 			var type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase();
@@ -495,6 +487,11 @@
 		var pow = Math.pow( 10, ( ( '' + mod ).split( '.' )[1] || '' ).length );
 		return ( ( num * pow ) % ( mod * pow ) ) / pow;
 	};
+
+	function getDate( val ) {
+		val = val.split( '-' );
+		return new Date( val[0], parseInt( val[1] ) - 1, val[2] );
+	}
 
 	function eventSupported( eventName ) {
 		var el = document.createElement( 'div' ),
