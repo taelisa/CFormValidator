@@ -134,31 +134,36 @@
 			var field = e.target || e.srcElement,
 				i;
 
-			if ( self.isFieldValid( field ) && field.value && self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && field.hasAttribute( ATTR_PREFIX + 'remote' ) ) {
-				var xhr,
-					postData = [encodeURIComponent( field.name ) + '=' + encodeURIComponent( field.value )],
-					i = withUid.length;
+			if ( self.isFieldValid( field ) ) {
+				if ( field.value && self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && field.hasAttribute( ATTR_PREFIX + 'remote' ) ) {
+					var xhr,
+						postData = [encodeURIComponent( field.name ) + '=' + encodeURIComponent( field.value )],
+						i = withUid.length;
 
-					while ( i-- ) {
-						postData.push( encodeURIComponent( withUid[i].name ) + '=' + encodeURIComponent( withUid[i].value ) );
+						while ( i-- ) {
+							postData.push( encodeURIComponent( withUid[i].name ) + '=' + encodeURIComponent( withUid[i].value ) );
+						}
+
+					if ( field.xhr ) {
+						xhr = field.xhr;
+						xhr.abort();
+					}
+					else {
+						xhr = createXHR();
+						field.xhr = xhr;
 					}
 
-				if ( field.xhr ) {
-					xhr = field.xhr;
-					xhr.abort();
-				}
-				else {
-					xhr = createXHR();
-					field.xhr = xhr;
-				}
+					doXHRRequest( xhr, self.form.getAttribute( ATTR_PREFIX + 'remoteurl' ), postData, function( json ) {
+						field.xhr = undefined;
 
-				doXHRRequest( xhr, self.form.getAttribute( ATTR_PREFIX + 'remoteurl' ), postData, function( json ) {
-					field.xhr = undefined;
-
-					( json && json[field.name] === true )
-						? self.settings.onValidField( field )
-						: self.settings.onInvalidField( field, json[field.name] );
-				});
+						( json && json[field.name] === true )
+							? self.settings.onValidField( field )
+							: self.settings.onInvalidField( field, json[field.name] );
+					});
+				}
+				else if ( typeof self.settings.customCheckField === 'function' ) {
+					self.settings.customCheckField( field );
+				}
 			}
 
 			for ( i = 0; i < withMatch.length; i++ ) {
@@ -180,7 +185,8 @@
 			form.submit();
 		},
 		onInvalidForm: function( invalidFields ){},
-		triggerOnChange: true
+		triggerOnChange: true,
+		customCheckField: null
 	};
 
 	CFormValidator._patterns = {
