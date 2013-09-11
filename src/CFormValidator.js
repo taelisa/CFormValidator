@@ -421,12 +421,7 @@
 			result = false;
 		}
 
-		if ( result ) {
-			this.settings.onValidField( field );
-		}
-		else {
-			this.settings.onInvalidField( field, errorType );
-		}
+		( result )? this.settings.onValidField( field ) : this.settings.onInvalidField( field, errorType );
 
 		return result;
 	}
