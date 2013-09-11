@@ -30,77 +30,81 @@
 			withRemote = this.form.querySelectorAll( '[' + ATTR_PREFIX + 'remote]' ),
 			withUid = this.form.querySelectorAll( '[' + ATTR_PREFIX + 'uid]' ),
 			formXHR = createXHR(),
+			toValidate = true,
 			self = this;
 
 		bindEvent( this.form, 'submit', function( e ) {
-			if ( e.preventDefault ) {
-				e.preventDefault();
-			}
-			else {
-				e.returnValue = false;
-			}
-
-			var result = self.isFormValidLocally();
-
-			if ( result.valid ) {
-				if ( self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && withRemote.length > 0 ) {
-					var postData = [],
-						i;
-
-					for ( i = withUid.length; i--; ) {
-						postData.push( encodeURIComponent( withUid[i].name ) + '=' + encodeURIComponent( withUid[i].value ) );
-					}
-
-					for ( i = submitBtns.length; i--; ) {
-						submitBtns[i].disabled = true;
-					}
-
-					for ( i = withRemote.length; i--; ) {
-						var field = withRemote[i];
-
-						if ( field.xhr ) {
-							field.xhr.abort();
-							field.xhr = undefined;
-						}
-
-						postData.push( encodeURIComponent( field.name ) + '=' + encodeURIComponent( field.value ) );
-					}
-
-					doXHRRequest( formXHR, self.form.getAttribute( ATTR_PREFIX + 'remoteurl' ), postData, function( json ) {
-						var valid = true,
-							invalidFields = [],
-							i;
-
-						for ( i in json ) {
-							if ( json[i] === true ) {
-								self.settings.onValidField( self.form.elements[i] );
-							}
-							else {
-								self.settings.onInvalidField( self.form.elements[i], json[i] );
-								invalidFields.push( self.form.elements[i] );
-								valid = false;
-							}
-						}
-
-						( valid )? self.settings.onValidForm( self.form ) : self.settings.onInvalidForm( invalidFields );
-
-						for ( i = submitBtns.length; i--; ) {
-							submitBtns[i].disabled = false;
-						}
-					});
+			if ( toValidate ) {
+				if ( e.preventDefault ) {
+					e.preventDefault();
 				}
 				else {
-					self.settings.onValidForm( self.form );
+					e.returnValue = false;
 				}
-			}
-			else {
-				self.settings.onInvalidForm( result.invalidFields );
+
+				var result = self.isFormValidLocally();
+
+				if ( result.valid ) {
+					if ( self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && withRemote.length > 0 ) {
+						var postData = [],
+							i;
+
+						for ( i = withUid.length; i--; ) {
+							postData.push( encodeURIComponent( withUid[i].name ) + '=' + encodeURIComponent( withUid[i].value ) );
+						}
+
+						for ( i = submitBtns.length; i--; ) {
+							submitBtns[i].disabled = true;
+						}
+
+						for ( i = withRemote.length; i--; ) {
+							var field = withRemote[i];
+
+							if ( field.xhr ) {
+								field.xhr.abort();
+								field.xhr = undefined;
+							}
+
+							postData.push( encodeURIComponent( field.name ) + '=' + encodeURIComponent( field.value ) );
+						}
+
+						doXHRRequest( formXHR, self.form.getAttribute( ATTR_PREFIX + 'remoteurl' ), postData, function( json ) {
+							var valid = true,
+								invalidFields = [],
+								i;
+
+							for ( i in json ) {
+								if ( json[i] === true ) {
+									self.settings.onValidField( self.form.elements[i] );
+								}
+								else {
+									self.settings.onInvalidField( self.form.elements[i], json[i] );
+									invalidFields.push( self.form.elements[i] );
+									valid = false;
+								}
+							}
+
+							( valid )? self.settings.onValidForm( self.form ) : self.settings.onInvalidForm( invalidFields );
+
+							for ( i = submitBtns.length; i--; ) {
+								submitBtns[i].disabled = false;
+							}
+						});
+					}
+					else {
+						self.settings.onValidForm( self.form );
+					}
+				}
+				else {
+					self.settings.onInvalidForm( result.invalidFields );
+				}
 			}
 		});
 
 		if ( this.settings.triggerOnChange ) {
 			if ( changeBubbles ) {
 				bindEvent( this.form, 'change', onchangeHandler );
+				bindEvent( this.form, 'click', checkSubmitBtn);
 			}
 			else {
 				bindEvent( this.form, 'beforeactivate', simulateChangeHandler );
@@ -109,30 +113,42 @@
 			}
 		}
 
-		function simulateChangeHandler( e ) {
-			var elem = e.target || e.srcElement,
-				attr = ATTR_PREFIX + 'previousvalue',
-				type = elem.type;
+		function checkSubmitBtn( e ) {
+			var btn = e.target || e.srcElement;
 
-			if ( /^(input|select|textarea)$/i.test( elem.nodeName ) && !elem.readOnly ) {
+			if ( btn.type === 'submit' ) {
+				toValidate = !btn.hasAttribute( 'formnovalidate' );
+			}
+		}
+
+		function simulateChangeHandler( e ) {
+			var field = e.target || e.srcElement,
+				attr = ATTR_PREFIX + 'previousvalue',
+				type = field.type;
+
+			if ( /^(input|select|textarea)$/i.test( field.nodeName ) && !field.readOnly ) {
 				if ( e.type === 'beforeactivate' ) {
-					elem.setAttribute( attr, elem.value );
+					field.setAttribute( attr, field.value );
 				}
 				else if ( e.type === 'focusout' ) {
-					if ( elem.getAttribute( attr ) !== elem.value ) {
+					if ( field.getAttribute( attr ) !== field.value ) {
 						onchangeHandler( e );
 					}
-					elem.removeAttribute( attr );
+					field.removeAttribute( attr );
 				}
-				else if ( e.type === 'click' && ( type === 'checkbox' || type === 'radio' || elem.nodeName.toLowerCase() === 'select' ) ) {
+				else if ( e.type === 'click' && ( type === 'checkbox' || type === 'radio' || field.nodeName.toLowerCase() === 'select' ) ) {
 					onchangeHandler( e );
 				}
 			}
 		};
 
-		function onchangeHandler(e) {
+		function onchangeHandler( e ) {
 			var field = e.target || e.srcElement,
 				i;
+
+			if ( !field.name ) {
+				return;
+			}
 
 			if ( self.isFieldValid( field ) ) {
 				if ( field.value && self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && field.hasAttribute( ATTR_PREFIX + 'remote' ) ) {
@@ -423,7 +439,7 @@
 		for ( i = 0; i < fields.length; i++ ) {
 			field = fields[i];
 
-			if ( field.disabled || field.readOnly || field.nodeName.toLowerCase() === 'fieldset' || /^(button|hidden|reset|submit)$/.test( field.type ) ) {
+			if ( !field.name || field.disabled || field.readOnly || field.nodeName.toLowerCase() === 'fieldset' || /^(button|hidden|reset|submit)$/.test( field.type ) ) {
 				continue;
 			}
 
