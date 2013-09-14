@@ -114,10 +114,10 @@
 		}
 
 		function checkSubmitBtn( e ) {
-			var btn = e.target || e.srcElement;
+			var elem = e.target || e.srcElement;
 
-			if ( btn.type === 'submit' ) {
-				toValidate = !btn.hasAttribute( 'formnovalidate' );
+			if ( /^(input|button)$/i.test( elem.nodeName ) && /^(image|submit)$/.test( elem.type ) ) {
+				toValidate = !elem.hasAttribute( 'formnovalidate' );
 			}
 		}
 
@@ -504,9 +504,9 @@
 		return new Date( val[0], parseInt( val[1] ) - 1, val[2] );
 	}
 
-	function eventSupported( eventName ) {
+	function eventSupported( type ) {
 		var el = document.createElement( 'div' ),
-			eventName = 'on' + eventName,
+			eventName = 'on' + type,
 			isSupported = ( eventName in el );
 
 		if ( !isSupported ) {
