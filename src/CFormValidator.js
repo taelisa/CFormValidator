@@ -99,7 +99,7 @@
 			type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase(),
 			errorType;
 
-		if ( field.nodeName.toLowerCase() !== 'select' && type !== 'radio' && type !== 'checkbox' ) {
+		if ( this.settings.autoTrim && field.nodeName.toLowerCase() !== 'select' && type !== 'radio' && type !== 'checkbox' ) {
 			field.value = trim( field.value );
 		}
 
@@ -121,7 +121,7 @@
 			}
 
 			if ( isRequired ) {
-				this.settings.onInvalidField( field, 'required' );
+				this.settings.onInvalidField( field, 'valueMissing' );
 				return false;
 			}
 			else {
@@ -143,32 +143,32 @@
 			}
 
 			if ( !isValid ) {
-				errorType = 'pattern';
+				errorType = 'patternMismatch';
 			}
 		}
 
 		if ( isValid && ( field.hasAttribute( 'maxlength' ) && field.value.length > parseInt( field.getAttribute( 'maxlength' ), 10 ) ) ) {
-			errorType = 'maxlength';
+			errorType = 'tooLong';
 			isValid = false;
 		}
 
 		if ( isValid && !CFormValidator._controls.type( field ) ) {
-			errorType = 'type';
+			errorType = 'typeMismatch';
 			isValid = false;
 		}
 
 		if ( isValid && field.hasAttribute( 'min' ) && !CFormValidator._controls.min( field ) ) {
-			errorType = 'min';
+			errorType = 'rangeUnderflow';
 			isValid = false;
 		}
 
 		if ( isValid && field.hasAttribute( 'max' ) && !CFormValidator._controls.max( field ) ) {
-			errorType = 'max';
+			errorType = 'rangeOverflow';
 			isValid = false;
 		}
 
 		if ( isValid && field.hasAttribute( 'step' ) && !CFormValidator._controls.step( field ) ) {
-			errorType = 'step';
+			errorType = 'stepMismatch';
 			isValid = false;
 		}
 
@@ -185,7 +185,7 @@
 		for ( i = 0; i < fields.length; i++ ) {
 			field = fields[i];
 
-			if ( !field.name || field.disabled || field.readOnly || field.nodeName.toLowerCase() === 'fieldset' || /^(button|hidden|reset|submit)$/.test( field.type ) ) {
+			if ( !field.name || field.disabled || field.readOnly || /^(fieldset|object)$/i.test( field.nodeName ) || /^(button|hidden|keygen|output|reset|submit)$/.test( field.type ) ) {
 				continue;
 			}
 
@@ -201,6 +201,7 @@
 	}
 
 	CFormValidator._defaultSettings = {
+		autoTrim: true,
 		onInvalidField: function( field, errorType ){},
 		onValidField: function( field ){},
 		onValidForm: function( form ) {
