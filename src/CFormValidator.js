@@ -23,174 +23,180 @@
 			return;
 		}
 
-		this.form.noValidate = true;
+		this.init();
+	}
 
-		var submitBtns = this.form.querySelectorAll( '[type=submit]' ),
-			withMatch = this.form.querySelectorAll( '[' + ATTR_PREFIX + 'match]' ),
-			withRemote = this.form.querySelectorAll( '[' + ATTR_PREFIX + 'remote]' ),
-			withUid = this.form.querySelectorAll( '[' + ATTR_PREFIX + 'uid]' ),
-			formXHR = createXHR(),
-			toValidate = true,
-			self = this;
+	CFormValidator.prototype.init = function() {
+		this.submitBtns = this.form.querySelectorAll( '[type=submit], [type=image]' );
+		this.withMatch = this.form.querySelectorAll( '[' + ATTR_PREFIX + 'match]' );
+		this.withRemote = this.form.querySelectorAll( '[' + ATTR_PREFIX + 'remote]' );
+		this.withUid = this.form.querySelectorAll( '[' + ATTR_PREFIX + 'uid]' );
+		this.formXHR = createXHR();
+		this.toValidate = true;
 
-		bindEvent( this.form, 'submit', function( e ) {
-			if ( toValidate ) {
-				if ( e.preventDefault ) {
-					e.preventDefault();
-				}
-				else {
-					e.returnValue = false;
-				}
+		var self = this;
 
-				var result = self.isFormValidLocally();
-
-				if ( result.valid ) {
-					if ( self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && withRemote.length > 0 ) {
-						var postData = [],
-							i;
-
-						for ( i = withUid.length; i--; ) {
-							postData.push( encodeURIComponent( withUid[i].name ) + '=' + encodeURIComponent( withUid[i].value ) );
-						}
-
-						for ( i = submitBtns.length; i--; ) {
-							submitBtns[i].disabled = true;
-						}
-
-						for ( i = withRemote.length; i--; ) {
-							var field = withRemote[i];
-
-							if ( field.xhr ) {
-								field.xhr.abort();
-								field.xhr = undefined;
-							}
-
-							postData.push( encodeURIComponent( field.name ) + '=' + encodeURIComponent( field.value ) );
-						}
-
-						doXHRRequest( formXHR, self.form.getAttribute( ATTR_PREFIX + 'remoteurl' ), postData, function( json ) {
-							var valid = true,
-								invalidFields = [],
-								i;
-
-							for ( i in json ) {
-								if ( json[i] === true ) {
-									self.settings.onValidField( self.form.elements[i] );
-								}
-								else {
-									self.settings.onInvalidField( self.form.elements[i], json[i] );
-									invalidFields.push( self.form.elements[i] );
-									valid = false;
-								}
-							}
-
-							( valid )? self.settings.onValidForm( self.form ) : self.settings.onInvalidForm( invalidFields );
-
-							for ( i = submitBtns.length; i--; ) {
-								submitBtns[i].disabled = false;
-							}
-						});
-					}
-					else {
-						self.settings.onValidForm( self.form );
-					}
-				}
-				else {
-					self.settings.onInvalidForm( result.invalidFields );
-				}
-			}
-		});
-
-		if ( this.settings.triggerOnChange ) {
-			if ( changeBubbles ) {
-				bindEvent( this.form, 'change', onchangeHandler );
-				bindEvent( this.form, 'click', checkSubmitBtn);
-			}
-			else {
-				bindEvent( this.form, 'beforeactivate', simulateChangeHandler );
-				bindEvent( this.form, 'click', simulateChangeHandler );
-				bindEvent( this.form, 'focusout', simulateChangeHandler );
-			}
-		}
-
-		function checkSubmitBtn( e ) {
-			var elem = e.target || e.srcElement;
-
-			if ( /^(input|button)$/i.test( elem.nodeName ) && /^(image|submit)$/.test( elem.type ) ) {
-				toValidate = !elem.hasAttribute( 'formnovalidate' );
-			}
-		}
-
-		function simulateChangeHandler( e ) {
-			var field = e.target || e.srcElement,
-				attr = ATTR_PREFIX + 'previousvalue',
-				type = field.type;
-
-			if ( /^(input|select|textarea)$/i.test( field.nodeName ) && !field.readOnly ) {
-				if ( e.type === 'beforeactivate' ) {
-					field.setAttribute( attr, field.value );
-				}
-				else if ( e.type === 'focusout' ) {
-					if ( field.getAttribute( attr ) !== field.value ) {
-						onchangeHandler( e );
-					}
-					field.removeAttribute( attr );
-				}
-				else if ( e.type === 'click' && ( type === 'checkbox' || type === 'radio' || field.nodeName.toLowerCase() === 'select' ) ) {
-					onchangeHandler( e );
-				}
+		this._handlers = {
+			submit: function( e ) {
+				onSubmitHandler( e, self );
+			},
+			click: function( e ) {
+				checkSubmitBtn( e, self );
 			}
 		};
 
-		function onchangeHandler( e ) {
-			var field = e.target || e.srcElement,
-				i;
+		this._origNoValidate = this.form.noValidate;
+		this.form.noValidate = true;
 
-			if ( !field.name ) {
-				return;
+		addEvent( this.form, 'submit', this._handlers.submit );
+		addEvent( this.form, 'click', this._handlers.click );
+
+		if ( this.settings.triggerOnChange ) {
+			if ( changeBubbles ) {
+				this._handlers.change = function( e ) {
+					onchangeHandler( e, self );
+				};
+
+				addEvent( this.form, 'change', this._handlers.change );
+			}
+			else {
+				this._handlers.simulate = function( e ) {
+					simulateChangeHandler( e, self );
+				};
+
+				addEvent( this.form, 'beforeactivate', this._handlers.simulate );
+				addEvent( this.form, 'click', this._handlers.simulate );
+				addEvent( this.form, 'focusout', this._handlers.simulate );
+			}
+		}
+	}
+
+	CFormValidator.prototype.reset = function() {
+		this.submitBtns = this.withMatch = this.withRemote = this.withUid = this.formXHR = null;
+		this.form.noValidate = this.form._origNoValidate;
+
+		removeEvent( this.form, 'submit', this._handlers.submit );
+		removeEvent( this.form, 'click', this._handlers.click );
+
+		this._handlers.submit = this._handlers.click = null;
+
+		if ( this.settings.triggerOnChange ) {
+			if ( changeBubbles ) {
+				removeEvent( this.form, 'change', this._handlers.change );
+				this._handlers.change = null;
+			}
+			else {
+				removeEvent( this.form, 'beforeactivate', this._handlers.simulate );
+				removeEvent( this.form, 'click', this._handlers.simulate );
+				removeEvent( this.form, 'focusout', this._handlers.simulate );
+				this._handlers.simulate = null;
+			}
+		}
+	}
+
+	CFormValidator.prototype.isFieldValid = function( field ) {
+		var isValid = true,
+			type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase(),
+			errorType;
+
+		if ( field.nodeName.toLowerCase() !== 'select' && type !== 'radio' && type !== 'checkbox' ) {
+			field.value = trim( field.value );
+		}
+
+		if ( field.hasAttribute( ATTR_PREFIX + 'match' ) && !CFormValidator._controls.match( field, this.form.elements[field.getAttribute( ATTR_PREFIX + 'match' )] ) ) {
+			errorType = 'match';
+			isValid = false;
+		}
+
+		if ( isValid && !CFormValidator._controls.required( field, this.form ) ) {
+			var isRequired = field.hasAttribute( 'required' );
+
+			if ( !isRequired && type === 'radio' && this.form.elements[field.name].length ) {
+				var radios = this.form.elements[field.name],
+					i = radios.length;
+
+				while ( !isRequired && i-- ) {
+					isRequired = radios[i].hasAttribute( 'required' );
+				}
 			}
 
-			if ( self.isFieldValid( field ) ) {
-				if ( field.value && self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && field.hasAttribute( ATTR_PREFIX + 'remote' ) ) {
-					var xhr,
-						postData = [encodeURIComponent( field.name ) + '=' + encodeURIComponent( field.value )],
-						i = withUid.length;
+			if ( isRequired ) {
+				this.settings.onInvalidField( field, 'required' );
+				return false;
+			}
+			else {
+				this.settings.onValidField( field );
+				return true;
+			}
+		}
 
-						while ( i-- ) {
-							postData.push( encodeURIComponent( withUid[i].name ) + '=' + encodeURIComponent( withUid[i].value ) );
-						}
+		// ToDo: list attribute
 
-					if ( field.xhr ) {
-						xhr = field.xhr;
-						xhr.abort();
-					}
-					else {
-						xhr = createXHR();
-						field.xhr = xhr;
-					}
+		if ( isValid && ( field.hasAttribute( 'pattern' ) || field.hasAttribute( ATTR_PREFIX + 'pattern' ) ) ) {
+			var pattern = field.getAttribute( 'pattern' ) || field.getAttribute( ATTR_PREFIX + 'pattern' );
 
-					doXHRRequest( xhr, self.form.getAttribute( ATTR_PREFIX + 'remoteurl' ), postData, function( json ) {
-						field.xhr = undefined;
-
-						( json && json[field.name] === true )
-							? self.settings.onValidField( field )
-							: self.settings.onInvalidField( field, json[field.name] );
-					});
-				}
-				else if ( typeof self.settings.customCheckField === 'function' ) {
-					self.settings.customCheckField( field );
-				}
+			if ( !CFormValidator._controls.pattern( field, pattern ) ) {
+				isValid = false;
+			}
+			else if ( pattern === 'date' ) {
+				isValid = CFormValidator._isValidDate( field.value );
 			}
 
-			for ( i = 0; i < withMatch.length; i++ ) {
-				var match = withMatch[i];
-
-				if ( field.name === match.getAttribute( ATTR_PREFIX + 'match' ) ) {
-					if ( ( !field.value.length && !match.value.length ) || match.value.length ) {
-						self.isFieldValid( match );
-					}
-				}
+			if ( !isValid ) {
+				errorType = 'pattern';
 			}
+		}
+
+		if ( isValid && ( field.hasAttribute( 'maxlength' ) && field.value.length > parseInt( field.getAttribute( 'maxlength' ), 10 ) ) ) {
+			errorType = 'maxlength';
+			isValid = false;
+		}
+
+		if ( isValid && !CFormValidator._controls.type( field ) ) {
+			errorType = 'type';
+			isValid = false;
+		}
+
+		if ( isValid && field.hasAttribute( 'min' ) && !CFormValidator._controls.min( field ) ) {
+			errorType = 'min';
+			isValid = false;
+		}
+
+		if ( isValid && field.hasAttribute( 'max' ) && !CFormValidator._controls.max( field ) ) {
+			errorType = 'max';
+			isValid = false;
+		}
+
+		if ( isValid && field.hasAttribute( 'step' ) && !CFormValidator._controls.step( field ) ) {
+			errorType = 'step';
+			isValid = false;
+		}
+
+		( isValid )? this.settings.onValidField( field ) : this.settings.onInvalidField( field, errorType );
+
+		return isValid;
+	}
+
+	CFormValidator.prototype.isFormValidLocally = function() {
+		var fields = this.form.elements,
+			invalidFields = [],
+			field, i;
+
+		for ( i = 0; i < fields.length; i++ ) {
+			field = fields[i];
+
+			if ( !field.name || field.disabled || field.readOnly || field.nodeName.toLowerCase() === 'fieldset' || /^(button|hidden|reset|submit)$/.test( field.type ) ) {
+				continue;
+			}
+
+			if ( !this.isFieldValid( field ) ) {
+				invalidFields.push(field);
+			}
+		}
+
+		return {
+			valid: !invalidFields.length,
+			invalidFields: invalidFields
 		}
 	}
 
@@ -343,112 +349,6 @@
 		}
 	}
 
-	CFormValidator.prototype.isFieldValid = function( field ) {
-		var result = true,
-			type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase(),
-			errorType;
-
-		if ( field.nodeName.toLowerCase() !== 'select' && type !== 'radio' && type !== 'checkbox' ) {
-			field.value = trim( field.value );
-		}
-
-		if ( field.hasAttribute( ATTR_PREFIX + 'match' ) && !CFormValidator._controls.match( field, this.form.elements[field.getAttribute( ATTR_PREFIX + 'match' )] ) ) {
-			errorType = 'match';
-			result = false;
-		}
-
-		if ( result && !CFormValidator._controls.required( field, this.form ) ) {
-			var isRequired = field.hasAttribute( 'required' );
-
-			if ( !isRequired && type === 'radio' && this.form.elements[field.name].length ) {
-				var radios = this.form.elements[field.name],
-					i = radios.length;
-
-				while ( !isRequired && i-- ) {
-					isRequired = radios[i].hasAttribute( 'required' );
-				}
-			}
-
-			if ( isRequired ) {
-				this.settings.onInvalidField( field, 'required' );
-				return false;
-			}
-			else {
-				this.settings.onValidField( field );
-				return true;
-			}
-		}
-
-		// ToDo: list attribute
-
-		if ( result && ( field.hasAttribute( 'pattern' ) || field.hasAttribute( ATTR_PREFIX + 'pattern' ) ) ) {
-			var pattern = field.getAttribute( 'pattern' ) || field.getAttribute( ATTR_PREFIX + 'pattern' );
-
-			if ( !CFormValidator._controls.pattern( field, pattern ) ) {
-				result = false;
-			}
-			else if ( pattern === 'date' ) {
-				result = CFormValidator._isValidDate( field.value );
-			}
-
-			if ( !result ) {
-				errorType = 'pattern';
-			}
-		}
-
-		if ( result && ( field.hasAttribute( 'maxlength' ) && field.value.length > parseInt( field.getAttribute( 'maxlength' ), 10 ) ) ) {
-			errorType = 'maxlength';
-			result = false;
-		}
-
-		if ( result && !CFormValidator._controls.type( field ) ) {
-			errorType = 'type';
-			result = false;
-		}
-
-		if ( result && field.hasAttribute( 'min' ) && !CFormValidator._controls.min( field ) ) {
-			errorType = 'min';
-			result = false;
-		}
-
-		if ( result && field.hasAttribute( 'max' ) && !CFormValidator._controls.max( field ) ) {
-			errorType = 'max';
-			result = false;
-		}
-
-		if ( result && field.hasAttribute( 'step' ) && !CFormValidator._controls.step( field ) ) {
-			errorType = 'step';
-			result = false;
-		}
-
-		( result )? this.settings.onValidField( field ) : this.settings.onInvalidField( field, errorType );
-
-		return result;
-	}
-
-	CFormValidator.prototype.isFormValidLocally = function() {
-		var fields = this.form.elements,
-			invalidFields = [],
-			field, i;
-
-		for ( i = 0; i < fields.length; i++ ) {
-			field = fields[i];
-
-			if ( !field.name || field.disabled || field.readOnly || field.nodeName.toLowerCase() === 'fieldset' || /^(button|hidden|reset|submit)$/.test( field.type ) ) {
-				continue;
-			}
-
-			if ( !this.isFieldValid( field ) ) {
-				invalidFields.push(field);
-			}
-		}
-
-		return {
-			valid: !invalidFields.length,
-			invalidFields: invalidFields
-		}
-	}
-
 	CFormValidator._isValidDate = function( val ) {
 		val = val.split( '-' );
 
@@ -464,10 +364,164 @@
 		return date.getFullYear() === y && date.getMonth() === m && date.getDate() === d;
 	}
 
-	function bindEvent( obj, eventName, listener ) {
+	function onSubmitHandler ( e, self ) {
+		if ( self.toValidate ) {
+			if ( e.preventDefault ) {
+				e.preventDefault();
+			}
+			else {
+				e.returnValue = false;
+			}
+
+			var result = self.isFormValidLocally();
+
+			if ( result.valid ) {
+				if ( self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && self.withRemote.length > 0 ) {
+					var postData = [],
+						i;
+
+					for ( i = self.withUid.length; i--; ) {
+						postData.push( encodeURIComponent( self.withUid[i].name ) + '=' + encodeURIComponent( self.withUid[i].value ) );
+					}
+
+					for ( i = self.submitBtns.length; i--; ) {
+						self.submitBtns[i].disabled = true;
+					}
+
+					for ( i = self.withRemote.length; i--; ) {
+						var field = self.withRemote[i];
+
+						if ( field.xhr ) {
+							field.xhr.abort();
+							field.xhr = undefined;
+						}
+
+						postData.push( encodeURIComponent( field.name ) + '=' + encodeURIComponent( field.value ) );
+					}
+
+					doXHRRequest( self.formXHR, self.form.getAttribute( ATTR_PREFIX + 'remoteurl' ), postData, function( json ) {
+						var valid = true,
+							invalidFields = [],
+							i;
+
+						for ( i in json ) {
+							if ( json[i] === true ) {
+								self.settings.onValidField( self.form.elements[i] );
+							}
+							else {
+								self.settings.onInvalidField( self.form.elements[i], json[i] );
+								invalidFields.push( self.form.elements[i] );
+								valid = false;
+							}
+						}
+
+						( valid )? self.settings.onValidForm( self.form ) : self.settings.onInvalidForm( invalidFields );
+
+						for ( i = self.submitBtns.length; i--; ) {
+							self.submitBtns[i].disabled = false;
+						}
+					});
+				}
+				else {
+					self.settings.onValidForm( self.form );
+				}
+			}
+			else {
+				self.settings.onInvalidForm( result.invalidFields );
+			}
+		}
+	}
+
+	function checkSubmitBtn( e, self ) {
+		var elem = e.target || e.srcElement;
+
+		if ( /^(input|button)$/i.test( elem.nodeName ) && /^(image|submit)$/.test( elem.type ) ) {
+			self.toValidate = !elem.hasAttribute( 'formnovalidate' );
+		}
+	}
+
+	function simulateChangeHandler( e, self ) {
+		var field = e.target || e.srcElement,
+			attr = ATTR_PREFIX + 'previousvalue',
+			type = field.type;
+
+		if ( /^(input|select|textarea)$/i.test( field.nodeName ) && !field.readOnly ) {
+			if ( e.type === 'beforeactivate' ) {
+				field.setAttribute( attr, field.value );
+			}
+			else if ( e.type === 'focusout' ) {
+				if ( field.getAttribute( attr ) !== field.value ) {
+					onchangeHandler( e, self );
+				}
+				field.removeAttribute( attr );
+			}
+			else if ( e.type === 'click' && ( type === 'checkbox' || type === 'radio' || field.nodeName.toLowerCase() === 'select' ) ) {
+				onchangeHandler( e, self );
+			}
+		}
+	};
+
+	function onchangeHandler( e, self ) {
+		var field = e.target || e.srcElement,
+			i;
+
+		if ( !field.name ) {
+			return;
+		}
+
+		if ( self.isFieldValid( field ) ) {
+			if ( field.value && self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && field.hasAttribute( ATTR_PREFIX + 'remote' ) ) {
+				var xhr,
+					postData = [encodeURIComponent( field.name ) + '=' + encodeURIComponent( field.value )],
+					i = self.withUid.length;
+
+					while ( i-- ) {
+						postData.push( encodeURIComponent( self.withUid[i].name ) + '=' + encodeURIComponent( self.withUid[i].value ) );
+					}
+
+				if ( field.xhr ) {
+					xhr = field.xhr;
+					xhr.abort();
+				}
+				else {
+					xhr = createXHR();
+					field.xhr = xhr;
+				}
+
+				doXHRRequest( xhr, self.form.getAttribute( ATTR_PREFIX + 'remoteurl' ), postData, function( json ) {
+					field.xhr = undefined;
+
+					( json && json[field.name] === true )
+						? self.settings.onValidField( field )
+						: self.settings.onInvalidField( field, json[field.name] );
+				});
+			}
+			else if ( typeof self.settings.customCheckField === 'function' ) {
+				self.settings.customCheckField( field );
+			}
+		}
+
+		for ( i = 0; i < self.withMatch.length; i++ ) {
+			var match = self.withMatch[i];
+
+			if ( field.name === match.getAttribute( ATTR_PREFIX + 'match' ) ) {
+				if ( ( !field.value.length && !match.value.length ) || match.value.length ) {
+					self.isFieldValid( match );
+				}
+			}
+		}
+	}
+
+	function addEvent( obj, eventName, listener ) {
 		( !obj.addEventListener )
 			? obj.attachEvent( 'on' + eventName, listener )
 			: obj.addEventListener( eventName, listener, false );
+	}
+
+	function removeEvent( obj, eventName, listener ) {
+		( !obj.removeEventListener )
+			? obj.detachEvent( 'on' + eventName, listener )
+			: obj.removeEventListener( eventName, listener, false );
 	}
 
 	function trim( string ) {
