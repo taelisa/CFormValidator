@@ -94,6 +94,66 @@
 		}
 	}
 
+	CFormValidator.prototype.validate = function() {
+		var self = this,
+			result = self.isFormValidLocally();
+
+		if ( result.valid ) {
+			if ( self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && self.withRemote.length > 0 ) {
+				var postData = [],
+					i;
+
+				for ( i = self.withUid.length; i--; ) {
+					postData.push( encodeURIComponent( self.withUid[i].name ) + '=' + encodeURIComponent( self.withUid[i].value ) );
+				}
+
+				for ( i = self.submitBtns.length; i--; ) {
+					self.submitBtns[i].disabled = true;
+				}
+
+				for ( i = self.withRemote.length; i--; ) {
+					var field = self.withRemote[i];
+
+					if ( field.xhr ) {
+						field.xhr.abort();
+						field.xhr = undefined;
+					}
+
+					postData.push( encodeURIComponent( field.name ) + '=' + encodeURIComponent( field.value ) );
+				}
+
+				doXHRRequest( self.formXHR, self.form.getAttribute( ATTR_PREFIX + 'remoteurl' ), postData, function( json ) {
+					var valid = true,
+						invalidFields = [],
+						i;
+
+					for ( i in json ) {
+						if ( json[i] === true ) {
+							self.settings.onValidField( self.form.elements[i] );
+						}
+						else {
+							self.settings.onInvalidField( self.form.elements[i], json[i] );
+							invalidFields.push( self.form.elements[i] );
+							valid = false;
+						}
+					}
+
+					( valid )? self.settings.onValidForm( self.form ) : self.settings.onInvalidForm( invalidFields );
+
+					for ( i = self.submitBtns.length; i--; ) {
+						self.submitBtns[i].disabled = false;
+					}
+				});
+			}
+			else {
+				self.settings.onValidForm( self.form );
+			}
+		}
+		else {
+			self.settings.onInvalidForm( result.invalidFields );
+		}
+	}
+
 	CFormValidator.prototype.isFieldValid = function( field ) {
 		var isValid = true,
 			type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase(),
@@ -121,7 +181,7 @@
 			}
 
 			if ( isRequired ) {
-				this.settings.onInvalidField( field, 'valueMissing' );
+				this.settings.onInvalidField( field, CFormValidator._errorTypes.required );
 				return false;
 			}
 			else {
@@ -143,32 +203,32 @@
 			}
 
 			if ( !isValid ) {
-				errorType = 'patternMismatch';
+				errorType = CFormValidator._errorTypes.pattern;
 			}
 		}
 
 		if ( isValid && ( field.hasAttribute( 'maxlength' ) && field.value.length > parseInt( field.getAttribute( 'maxlength' ), 10 ) ) ) {
-			errorType = 'tooLong';
+			errorType = CFormValidator._errorTypes.maxlength;
 			isValid = false;
 		}
 
 		if ( isValid && !CFormValidator._controls.type( field ) ) {
-			errorType = 'typeMismatch';
+			errorType = CFormValidator._errorTypes.type;
 			isValid = false;
 		}
 
 		if ( isValid && field.hasAttribute( 'min' ) && !CFormValidator._controls.min( field ) ) {
-			errorType = 'rangeUnderflow';
+			errorType = CFormValidator._errorTypes.min;
 			isValid = false;
 		}
 
 		if ( isValid && field.hasAttribute( 'max' ) && !CFormValidator._controls.max( field ) ) {
-			errorType = 'rangeOverflow';
+			errorType = CFormValidator._errorTypes.max;
 			isValid = false;
 		}
 
 		if ( isValid && field.hasAttribute( 'step' ) && !CFormValidator._controls.step( field ) ) {
-			errorType = 'stepMismatch';
+			errorType = CFormValidator._errorTypes.step;
 			isValid = false;
 		}
 
@@ -350,6 +410,16 @@
 		}
 	}
 
+	CFormValidator._errorTypes = {
+		required: 'valueMissing',
+		pattern: 'patternMismatch',
+		maxlength: 'tooLong',
+		type: 'typeMismatch',
+		min: 'rangeUnderflow',
+		max: 'rangeOverflow',
+		step: 'stepMismatch'
+	}
+
 	CFormValidator._isValidDate = function( val ) {
 		val = val.split( '-' );
 
@@ -374,62 +444,10 @@
 				e.returnValue = false;
 			}
 
-			var result = self.isFormValidLocally();
-
-			if ( result.valid ) {
-				if ( self.form.hasAttribute( ATTR_PREFIX + 'remoteurl' ) && self.withRemote.length > 0 ) {
-					var postData = [],
-						i;
-
-					for ( i = self.withUid.length; i--; ) {
-						postData.push( encodeURIComponent( self.withUid[i].name ) + '=' + encodeURIComponent( self.withUid[i].value ) );
-					}
-
-					for ( i = self.submitBtns.length; i--; ) {
-						self.submitBtns[i].disabled = true;
-					}
-
-					for ( i = self.withRemote.length; i--; ) {
-						var field = self.withRemote[i];
-
-						if ( field.xhr ) {
-							field.xhr.abort();
-							field.xhr = undefined;
-						}
-
-						postData.push( encodeURIComponent( field.name ) + '=' + encodeURIComponent( field.value ) );
-					}
-
-					doXHRRequest( self.formXHR, self.form.getAttribute( ATTR_PREFIX + 'remoteurl' ), postData, function( json ) {
-						var valid = true,
-							invalidFields = [],
-							i;
-
-						for ( i in json ) {
-							if ( json[i] === true ) {
-								self.settings.onValidField( self.form.elements[i] );
-							}
-							else {
-								self.settings.onInvalidField( self.form.elements[i], json[i] );
-								invalidFields.push( self.form.elements[i] );
-								valid = false;
-							}
-						}
-
-						( valid )? self.settings.onValidForm( self.form ) : self.settings.onInvalidForm( invalidFields );
-
-						for ( i = self.submitBtns.length; i--; ) {
-							self.submitBtns[i].disabled = false;
-						}
-					});
-				}
-				else {
-					self.settings.onValidForm( self.form );
-				}
-			}
-			else {
-				self.settings.onInvalidForm( result.invalidFields );
-			}
+			self.validate();
+		}
+		else {
+			self.toValidate = true;
 		}
 	}
 
