@@ -313,7 +313,7 @@
 				return true;
 			}
 
-			return doModule( parseFloat( field.value ), parseFloat( step ) ) !== 0;
+			return doModule( parseFloat( field.value ), parseFloat( step ) ) === 0;
 		},
 		type: function( field ) {
 			var type = ( field.getAttribute( 'type' ) || field.type ).toLowerCase();
