@@ -34,6 +34,9 @@
 		this.formXHR = createXHR();
 		this.toValidate = true;
 
+		this._origNoValidate = this.form.noValidate;
+		this.form.noValidate = true;
+
 		var self = this;
 
 		this._handlers = {
@@ -44,9 +47,6 @@
 				checkSubmitBtn( e, self );
 			}
 		};
-
-		this._origNoValidate = this.form.noValidate;
-		this.form.noValidate = true;
 
 		addEvent( this.form, 'submit', this._handlers.submit );
 		addEvent( this.form, 'click', this._handlers.click );
@@ -164,7 +164,7 @@
 		}
 
 		if ( field.hasAttribute( ATTR_PREFIX + 'match' ) && !CFormValidator._controls.match( field, this.form.elements[field.getAttribute( ATTR_PREFIX + 'match' )] ) ) {
-			errorType = 'match';
+			errorType = CFormValidator._errorTypes.match;
 			isValid = false;
 		}
 
@@ -415,6 +415,7 @@
 		pattern: 'patternMismatch',
 		maxlength: 'tooLong',
 		type: 'typeMismatch',
+		match: 'match',
 		min: 'rangeUnderflow',
 		max: 'rangeOverflow',
 		step: 'stepMismatch'
