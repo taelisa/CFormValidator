@@ -101,6 +101,7 @@
 		}
 		else if ( this.settings.triggerOn === 'blur' ) {
 			removeEvent( this.form, 'focusout', this._handlers.focusout );
+			this._handlers.focusout = null;
 		}
 	}
 
