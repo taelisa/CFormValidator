@@ -51,10 +51,10 @@
 		addEvent( this.form, 'submit', this._handlers.submit );
 		addEvent( this.form, 'click', this._handlers.click );
 
-		if ( this.settings.triggerOnChange ) {
+		if ( this.settings.triggerOn === 'change' ) {
 			if ( changeBubbles ) {
 				this._handlers.change = function( e ) {
-					onchangeHandler( e, self );
+					fieldHandler( e, self );
 				};
 
 				addEvent( this.form, 'change', this._handlers.change );
@@ -69,6 +69,13 @@
 				addEvent( this.form, 'focusout', this._handlers.simulate );
 			}
 		}
+		else if ( this.settings.triggerOn === 'blur' ) {
+			this._handlers.focusout = function( e ) {
+				fieldHandler( e, self );
+			}
+
+			addEvent( this.form, 'focusout', this._handlers.focusout );
+		}
 	}
 
 	CFormValidator.prototype.reset = function() {
@@ -80,7 +87,7 @@
 
 		this._handlers.submit = this._handlers.click = null;
 
-		if ( this.settings.triggerOnChange ) {
+		if ( this.settings.triggerOn === 'change' ) {
 			if ( changeBubbles ) {
 				removeEvent( this.form, 'change', this._handlers.change );
 				this._handlers.change = null;
@@ -91,6 +98,9 @@
 				removeEvent( this.form, 'focusout', this._handlers.simulate );
 				this._handlers.simulate = null;
 			}
+		}
+		else if ( this.settings.triggerOn === 'blur' ) {
+			removeEvent( this.form, 'focusout', this._handlers.focusout );
 		}
 	}
 
@@ -268,7 +278,7 @@
 			form.submit();
 		},
 		onInvalidForm: function( invalidFields ){},
-		triggerOnChange: true,
+		triggerOn: 'change',
 		customCheckField: null
 	};
 
@@ -471,17 +481,17 @@
 			}
 			else if ( e.type === 'focusout' ) {
 				if ( field.getAttribute( attr ) !== field.value ) {
-					onchangeHandler( e, self );
+					fieldHandler( e, self );
 				}
 				field.removeAttribute( attr );
 			}
 			else if ( e.type === 'click' && ( type === 'checkbox' || type === 'radio' || field.nodeName.toLowerCase() === 'select' ) ) {
-				onchangeHandler( e, self );
+				fieldHandler( e, self );
 			}
 		}
 	};
 
-	function onchangeHandler( e, self ) {
+	function fieldHandler( e, self ) {
 		var field = e.target || e.srcElement,
 			i;
 
