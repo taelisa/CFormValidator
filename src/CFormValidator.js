@@ -4,6 +4,10 @@
 		ATTR_PREFIX = 'data-cform-';
 
 	function CFormValidator(options) {
+		if (!(this instanceof CFormValidator)) {
+			return new CFormValidator(options);
+		}
+
 		this.settings = CFormValidator._defaultSettings;
 		this.form = null;
 
@@ -15,6 +19,9 @@
 
 		if (typeof this.settings.form === 'string') {
 			this.form = document.forms[this.settings.form] || document.getElementById(this.settings.form);
+		}
+		else {
+			this.form = this.settings.form;
 		}
 
 		delete this.settings.form;
