@@ -117,7 +117,7 @@
 			result = self.isFormValidLocally();
 
 		if (result.valid) {
-			if (self.form.hasAttribute(ATTR_PREFIX + 'remoteurl') && self.withRemote.length > 0) {
+			if (self.form.hasAttribute(ATTR_PREFIX + 'remoteurl') && self.withRemote.length) {
 				var postData = [],
 					i;
 
@@ -408,7 +408,7 @@
 						var emails = field.value.split(',');
 
 						for (var i = 0; i < emails.length; i++) {
-							if (! CFormValidator._patterns.email.test(trim(emails[i]))) {
+							if (!CFormValidator._patterns.email.test(trim(emails[i]))) {
 								return false;
 							}
 						}
