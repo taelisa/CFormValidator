@@ -3,13 +3,12 @@
 	var changeBubbles = eventSupported('change'),
 		ATTR_PREFIX = 'data-cform-';
 
-	function CFormValidator(options) {
+	function CFormValidator(form, options) {
 		if (!(this instanceof CFormValidator)) {
 			return new CFormValidator(options);
 		}
 
 		this.settings = CFormValidator._defaultSettings;
-		this.form = null;
 
 		if (options) {
 			for(var i in options) {
@@ -17,14 +16,7 @@
 			}
 		}
 
-		if (typeof this.settings.form === 'string') {
-			this.form = document.forms[this.settings.form] || document.getElementById(this.settings.form);
-		}
-		else {
-			this.form = this.settings.form;
-		}
-
-		delete this.settings.form;
+		this.form = typeof form === 'string'? document.forms[form] : form;
 
 		if (!this.form || !this.form.elements) {
 			return;
@@ -289,14 +281,11 @@
 	};
 
 	CFormValidator._patterns = {
-		cap:		/^\d{5}$/,
 		date:		/^\d{4}-(0[1-9]|1[012])-(0[1-9]|1\d|2\d|3[01])$/,
 		digits:		/^\d+$/,
 		email:		/^([a-zA-Z0-9-_\.])+@([a-zA-Z0-9-]\.?)*([a-zA-Z]){2,}$/,
 		number:		/^-?\d+(\.\d+)?([eE][-+]?\d+)?$/,
-		price:		/^\d+(\.\d{1,2})?$/,
-		fiscalCode:	/^[0-9a-zA-Z]{16}$/,
-		vatNumber:	/^\d{11}$/
+		price:		/^\d+(\.\d{1,2})?$/
 	}
 
 	CFormValidator._controls = {
@@ -305,9 +294,10 @@
 		},
 		max: function(field) {
 			var max = field.getAttribute('max'),
-				type = (field.getAttribute('type') || field.type).toLowerCase();
+				type = (field.getAttribute('type') || field.type).toLowerCase(),
+				pattern = field.getAttribute(ATTR_PREFIX + 'pattern');
 
-			if (type === 'date') {
+			if (type === 'date' || (pattern && pattern.toLowerCase() === 'date')) {
 				return getDate(field.value) <= getDate(max);
 			}
 
@@ -315,9 +305,10 @@
 		},
 		min: function(field) {
 			var min = field.getAttribute('min'),
-				type = (field.getAttribute('type') || field.type).toLowerCase();
+				type = (field.getAttribute('type') || field.type).toLowerCase(),
+				pattern = field.getAttribute(ATTR_PREFIX + 'pattern');
 
-			if (type === 'date') {
+			if (type === 'date' || (pattern && pattern.toLowerCase() === 'date')) {
 				return getDate(field.value) >= getDate(min);
 			}
 
@@ -378,13 +369,14 @@
 		},
 		step: function(field) {
 			var step = field.getAttribute('step'),
-				type = (field.getAttribute('type') || field.type).toLowerCase();
+				type = (field.getAttribute('type') || field.type).toLowerCase(),
+				pattern = field.getAttribute(ATTR_PREFIX + 'pattern');
 
 			if (step.toLowerCase() === 'any') {
 				return true;
 			}
 
-			if (type === 'date') {
+			if (type === 'date' || (pattern && pattern.toLowerCase() === 'date')) {
 				// ToDo
 				return true;
 			}
@@ -431,7 +423,7 @@
 		pattern: 'patternMismatch',
 		maxlength: 'tooLong',
 		type: 'typeMismatch',
-		match: 'match',
+		match: 'notMatching',
 		min: 'rangeUnderflow',
 		max: 'rangeOverflow',
 		step: 'stepMismatch'

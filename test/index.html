@@ -86,8 +86,7 @@
 		<script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
 		<script src="../src/CFormValidator.js"></script>
 		<script>
-			var theForm = new CFormValidator({
-				form: 'theForm',
+			var theForm = new CFormValidator('theForm', {
 				onValidForm: function() {
 					console.log('The form is valid! :)');
 				},
