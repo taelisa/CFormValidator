@@ -169,7 +169,7 @@
 			type = (field.getAttribute('type') || field.type).toLowerCase(),
 			errorType;
 
-		if (this.settings.autoTrim && field.nodeName.toLowerCase() !== 'select' && type !== 'radio' && type !== 'checkbox') {
+		if (this.settings.autoTrim && field.nodeName.toLowerCase() !== 'select' && !/^(checkbox|file|radio)$/.test(type)) {
 			field.value = trim(field.value);
 		}
 
