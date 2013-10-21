@@ -19,7 +19,7 @@
 		this.form = typeof form === 'string'? document.forms[form] : form;
 
 		if (!this.form || !this.form.elements) {
-			return;
+			throw new Error('The element must be an HTML Form');
 		}
 
 		this.init();
@@ -32,7 +32,6 @@
 		this.withUid = this.form.querySelectorAll('[' + ATTR_PREFIX + 'uid]');
 		this.formXHR = createXHR();
 		this.toValidate = true;
-
 		this._origNoValidate = this.form.noValidate;
 		this.form.noValidate = true;
 
@@ -109,7 +108,7 @@
 			result = self.isFormValidLocally();
 
 		if (result.valid) {
-			if (self.form.hasAttribute(ATTR_PREFIX + 'remoteurl') && self.withRemote.length) {
+			if (self.form.getAttribute(ATTR_PREFIX + 'remoteurl') && self.withRemote.length) {
 				var postData = [],
 					i;
 
@@ -173,20 +172,20 @@
 			field.value = trim(field.value);
 		}
 
-		if (field.hasAttribute(ATTR_PREFIX + 'match') && !CFormValidator._controls.match(field, this.form.elements[field.getAttribute(ATTR_PREFIX + 'match')])) {
+		if (field.getAttribute(ATTR_PREFIX + 'match') && !CFormValidator._controls.match(field, this.form.elements[field.getAttribute(ATTR_PREFIX + 'match')])) {
 			errorType = CFormValidator._errorTypes.match;
 			isValid = false;
 		}
 
 		if (isValid && !CFormValidator._controls.required(field, this.form)) {
-			var isRequired = field.hasAttribute('required');
+			var isRequired = hasAttr(field, 'required');
 
 			if (!isRequired && type === 'radio' && this.form.elements[field.name].length) {
 				var radios = this.form.elements[field.name],
 					i = radios.length;
 
 				while (!isRequired && i--) {
-					isRequired = radios[i].hasAttribute('required');
+					isRequired = hasAttr(radios[i], 'required');
 				}
 			}
 
@@ -200,7 +199,7 @@
 			}
 		}
 
-		if (isValid && (field.hasAttribute('pattern') || field.hasAttribute(ATTR_PREFIX + 'pattern'))) {
+		if (isValid && (field.getAttribute('pattern') || field.getAttribute(ATTR_PREFIX + 'pattern'))) {
 			var pattern = field.getAttribute('pattern') || field.getAttribute(ATTR_PREFIX + 'pattern');
 
 			if (!CFormValidator._controls.pattern(field, pattern)) {
@@ -215,7 +214,7 @@
 			}
 		}
 
-		if (isValid && (field.hasAttribute('maxlength') && field.value.length > parseInt(field.getAttribute('maxlength'), 10))) {
+		if (isValid && (field.getAttribute('maxlength') && field.value.length > parseInt(field.getAttribute('maxlength'), 10))) {
 			errorType = CFormValidator._errorTypes.maxlength;
 			isValid = false;
 		}
@@ -225,19 +224,26 @@
 			isValid = false;
 		}
 
-		if (isValid && field.hasAttribute('min') && !CFormValidator._controls.min(field)) {
+		if (isValid && field.getAttribute('min') && !CFormValidator._controls.min(field)) {
 			errorType = CFormValidator._errorTypes.min;
 			isValid = false;
 		}
 
-		if (isValid && field.hasAttribute('max') && !CFormValidator._controls.max(field)) {
+		if (isValid && field.getAttribute('max') && !CFormValidator._controls.max(field)) {
 			errorType = CFormValidator._errorTypes.max;
 			isValid = false;
 		}
 
-		if (isValid && field.hasAttribute('step') && !CFormValidator._controls.step(field)) {
+		if (isValid && field.getAttribute('step') && !CFormValidator._controls.step(field)) {
 			errorType = CFormValidator._errorTypes.step;
 			isValid = false;
+		}
+
+		if (isValid && this.settings.customChecks && typeof this.settings.customChecks[field.name] === 'function') {
+			var result = this.settings.customChecks[field.name](field);
+
+			isValid = result.valid;
+			errorType = isValid? undefined : result.errorType;
 		}
 
 		(isValid)? this.settings.onValidField(field) : this.settings.onInvalidField(field, errorType);
@@ -277,7 +283,7 @@
 		},
 		onInvalidForm: function(invalidFields){},
 		triggerOn: 'change',
-		customCheckField: null
+		customChecks: null
 	};
 
 	CFormValidator._patterns = {
@@ -298,7 +304,7 @@
 				pattern = field.getAttribute(ATTR_PREFIX + 'pattern');
 
 			if (type === 'date' || (pattern && pattern.toLowerCase() === 'date')) {
-				return getDate(field.value) <= getDate(max);
+				return CFormValidator._getDateObj(field.value) <= CFormValidator._getDateObj(max);
 			}
 
 			return parseFloat(field.value) <= parseFloat(max);
@@ -309,7 +315,7 @@
 				pattern = field.getAttribute(ATTR_PREFIX + 'pattern');
 
 			if (type === 'date' || (pattern && pattern.toLowerCase() === 'date')) {
-				return getDate(field.value) >= getDate(min);
+				return CFormValidator._getDateObj(field.value) >= CFormValidator._getDateObj(min);
 			}
 
 			return parseFloat(field.value) >= parseFloat(min);
@@ -318,7 +324,7 @@
 			var result;
 
 			if (field.nodeName.toLowerCase() === 'select') {
-				if (field.hasAttribute('multiple') && field.selectedIndex !== -1) {
+				if (hasAttr(field, 'multiple') && field.selectedIndex !== -1) {
 					for (var i = 0, opt; !result && (opt = field.options[i]); i++) {
 						result = opt.selected && opt.value !== '';
 					}
@@ -396,7 +402,7 @@
 
 					return false;
 				case 'email':
-					if (field.hasAttribute('multiple')) {
+					if (hasAttr(field, 'multiple')) {
 						var emails = field.value.split(',');
 
 						for (var i = 0; i < emails.length; i++) {
@@ -427,6 +433,11 @@
 		min: 'rangeUnderflow',
 		max: 'rangeOverflow',
 		step: 'stepMismatch'
+	}
+
+	CFormValidator._getDateObj = function(val) {
+		val = val.split('-');
+		return new Date(val[0], parseInt(val[1]) - 1, val[2]);
 	}
 
 	CFormValidator._isValidDate = function(val) {
@@ -464,7 +475,7 @@
 		var elem = e.target || e.srcElement;
 
 		if (/^(input|button)$/i.test(elem.nodeName) && /^(image|submit)$/.test(elem.type)) {
-			self.toValidate = !elem.hasAttribute('formnovalidate');
+			self.toValidate = !hasAttr(elem, 'formnovalidate');
 		}
 	}
 
@@ -498,7 +509,7 @@
 		}
 
 		if (self.isFieldValid(field)) {
-			if (field.value && self.form.hasAttribute(ATTR_PREFIX + 'remoteurl') && field.hasAttribute(ATTR_PREFIX + 'remote')) {
+			if (field.value && self.form.getAttribute(ATTR_PREFIX + 'remoteurl') && hasAttr(field, ATTR_PREFIX + 'remote')) {
 				var xhr,
 					postData = [encodeURIComponent(field.name) + '=' + encodeURIComponent(field.value)],
 					i = self.withUid.length;
@@ -558,6 +569,10 @@
 			: string.trim();
 	}
 
+	function hasAttr(obj, attr) {
+		return 'hasAttribute' in obj? obj.hasAttribute(attr) : obj.getAttribute(attr) != null;
+	}
+
 	function createXHR() {
 		return (!window.XMLHttpRequest)? new ActiveXObject('Microsoft.XMLHTTP') : new XMLHttpRequest();
 	}
@@ -580,11 +595,6 @@
 		var pow = Math.pow(10, (('' + mod).split('.')[1] || '').length);
 		return ((num * pow) % (mod * pow)) / pow;
 	};
-
-	function getDate(val) {
-		val = val.split('-');
-		return new Date(val[0], parseInt(val[1]) - 1, val[2]);
-	}
 
 	function eventSupported(type) {
 		var el = document.createElement('div'),
