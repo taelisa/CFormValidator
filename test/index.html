@@ -1,122 +1,153 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-	<head>
-		<meta http-equiv="X-UA-Compatible" content="IE=edge">
-		<meta charset="utf-8">
-		<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css">
-		<title>CFormValidator Example</title>
-	</head>
-	<body>
-		<div class="container">
-			<h1>CFormValidator example</h1>
-			<form id="theForm" class="form-horizontal">
-				<fieldset>
-					<legend>The Form</legend>
-					<div class="control-group">
-						<label class="control-label">Email *</label>
-						<div class="controls">
-							<input type="email" name="email" placeholder="Email" required title="The Email is required">
-							<span class="help-inline"></span>
-						</div>
-					</div>
-					<div class="control-group">
-						<label class="control-label">Password</label>
-						<div class="controls">
-							<input type="password" name="password" placeholder="Password">
-							<span class="help-inline"></span>
-						</div>
-					</div>
-					<div class="control-group">
-						<label class="control-label">Confirm password</label>
-						<div class="controls">
-							<input type="password" name="password2" placeholder="Password" data-cform-match="password" title="The passwords must match">
-							<span class="help-inline"></span>
-						</div>
-					</div>
-					<div class="control-group">
-						<label class="control-label">Average beers at week</label>
-						<div class="controls">
-							<input type="number" name="beers" placeholder="1.0" title="Please insert a valid number" min=7> (minimum 7.0)
-							<span class="help-inline"></span>
-						</div>
-					</div>
-					<div class="control-group">
-						<label class="control-label">Euros for the puppy</label>
-						<div class="controls">
-							<input type="text" data-cform-pattern="price" name="puppy" placeholder="15.0" title="Please insert a valid euros amount" max="50.50"> (maximum 50.50)
-							<span class="help-inline"></span>
-						</div>
-					</div>
-					<div class="control-group">
-						<label class="control-label">Only digits please</label>
-						<div class="controls">
-							<input type="text" data-cform-pattern="digits" name="digits" placeholder="280" title="Please insert an integer multiple of 4" step="4"> (multiple of 4)
-							<span class="help-inline"></span>
-						</div>
-					</div>
-					<div class="control-group">
-						<label class="control-label">Date of a good day *</label>
-						<div class="controls">
-							<input type="date" name="goodday" title="Please insert a valid date" required> (YYYY-MM-DD)
-							<span class="help-inline"></span>
-						</div>
-					</div>
-					<div class="control-group">
-						<label class="control-label">A day in 2012</label>
-						<div class="controls">
-							<input type="date" name="day2012" title="Please insert a valid date in 2012" min="2012-01-01" max="2012-12-31"> (2012-MM-DD)
-							<span class="help-inline"></span>
-						</div>
-					</div>
-					<div class="control-group">
-						<label class="control-label">Privacy check *</label>
-						<div class="controls">
-							<input type="checkbox" name="privacy" required title="The privacy terms must be accepted">
-							<span class="help-inline"></span>
-						</div>
-					</div>
-					<div class="form-actions">
-						<button type="reset" class="btn">Reset</button>
-						<button type="submit" class="btn btn-primary">Submit</button>
-						<button type="submit" class="btn btn-info" formnovalidate>Submit always</button>
-					</div>
-				</fieldset>
-			</form>
-		</div>
-		<script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
-		<script src="../src/CFormValidator.js"></script>
-		<script>
-			var theForm = new CFormValidator('theForm', {
-				onValidForm: function() {
-					console.log('The form is valid! :)');
-				},
-				onInvalidForm: function() {
-					console.log('The form is not valid! :(');
-				},
-				onValidField: function(field) {
-					$(field).closest('.control-group').removeClass('error');
-					$(field).next('.help-inline, .help-block').text('');
-				},
-				onInvalidField: function(field, errorType) {
-					var msg;
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css">
+    <title>CFormValidator Example</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>CFormValidator example</h1>
+      <p class="lead">
+      How to use:<br>
+      <pre>&lt;script&gt;
+  var theForm = new CFormValidator('theForm', {
+    onValidForm: function() {
+      console.log('The form is valid! :)');
+    },
+    onInvalidForm: function() {
+      console.log('The form is not valid! :(');
+    },
+    onValidField: function(field) {
+      $(field).closest('.control-group').removeClass('error');
+      $(field).next('.help-inline, .help-block').text('');
+    },
+    onInvalidField: function(field, errorType) {
+      var msg;
 
-					switch (field.name) {
-						case 'beer':
-							if (errorType === 'rangeUnderflow') {
-								msg = 'Respect the minimum beers number';
-							}
-							break;
-					}
+      switch (field.name) {
+        case 'beer':
+          if (errorType === 'rangeUnderflow') {
+            msg = 'Respect the minimum beers number';
+          }
+          break;
+      }
 
-					$(field).closest('.control-group').addClass('error');
-					$(field).next('.help-inline, .help-block').text(msg || field.title);
-				}
-			});
+      $(field).closest('.control-group').addClass('error');
+      $(field).next('.help-inline, .help-block').text(msg || field.title);
+    }
+  });
+&lt;/script&gt;</pre>
+      </p>
+      <form id="theForm" class="form-horizontal">
+        <fieldset>
+          <legend>The Form</legend>
+          <div class="control-group">
+            <label class="control-label">Email *</label>
+            <div class="controls">
+              <input type="email" name="email" placeholder="Email" required title="The Email is required">
+              <span class="help-inline"></span>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">Password</label>
+            <div class="controls">
+              <input type="password" name="password" placeholder="Password">
+              <span class="help-inline"></span>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">Confirm password</label>
+            <div class="controls">
+              <input type="password" name="password2" placeholder="Password" data-cform-match="password" title="The passwords must match">
+              <span class="help-inline"></span>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">Average beers at week</label>
+            <div class="controls">
+              <input type="number" name="beers" placeholder="1.0" title="Please insert a valid number" min=7> (minimum 7.0)
+              <span class="help-inline"></span>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">Euros for the puppy</label>
+            <div class="controls">
+              <input type="text" data-cform-pattern="price" name="puppy" placeholder="15.0" title="Please insert a valid euros amount" max="50.50"> (maximum 50.50)
+              <span class="help-inline"></span>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">Only digits please</label>
+            <div class="controls">
+              <input type="text" data-cform-pattern="digits" name="digits" placeholder="280" title="Please insert an integer multiple of 4" step="4"> (multiple of 4)
+              <span class="help-inline"></span>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">Date of a good day *</label>
+            <div class="controls">
+              <input type="date" name="goodday" title="Please insert a valid date" required> (YYYY-MM-DD)
+              <span class="help-inline"></span>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">A day in 2012</label>
+            <div class="controls">
+              <input type="date" name="day2012" title="Please insert a valid date in 2012" min="2012-01-01" max="2012-12-31"> (2012-MM-DD)
+              <span class="help-inline"></span>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">Privacy check *</label>
+            <div class="controls">
+              <input type="checkbox" name="privacy" required title="The privacy terms must be accepted">
+              <span class="help-inline"></span>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="reset" class="btn">Reset</button>
+            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="submit" class="btn btn-info" formnovalidate>Submit anyway</button>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+    <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="../src/CFormValidator.js"></script>
+    <script>
+      var theForm = new CFormValidator('theForm', {
+        onValidForm: function() {
+          console.log('The form is valid! :)');
+        },
+        onInvalidForm: function() {
+          console.log('The form is not valid! :(');
+        },
+        onValidField: function(field) {
+          $(field).closest('.control-group').removeClass('error');
+          $(field).next('.help-inline, .help-block').text('');
+        },
+        onInvalidField: function(field, errorType) {
+          var msg;
 
-			$('#theForm').on('reset', function(){
-				$(this).find('.help-inline, .help-block').text('');
-				$(this).find('.control-group').removeClass('error');
-			});
-		</script>
-	</body>
+          switch (field.name) {
+            case 'beer':
+              if (errorType === 'rangeUnderflow') {
+                msg = 'Respect the minimum beers number';
+              }
+              break;
+          }
+
+          $(field).closest('.control-group').addClass('error');
+          $(field).next('.help-inline, .help-block').text(msg || field.title);
+        }
+      });
+
+      $('#theForm').on('reset', function(){
+        $(this).find('.help-inline, .help-block').text('');
+        $(this).find('.control-group').removeClass('error');
+      });
+    </script>
+  </body>
 </html>
