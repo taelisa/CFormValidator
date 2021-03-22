@@ -244,12 +244,15 @@
       isValid = false;
     }
 
-    if (isValid && this.settings.customChecks && 'function' === typeof this.settings.customChecks[field.name]) {
-      var result = this.settings.customChecks[field.name](field);
+    var fieldNameMatch = /^\w+\[\w+\]/.test(field.name);
+		var substrFieldName = field.name.split('[');
 
-      isValid = result.valid;
-      errorType = isValid? undefined : result.errorType;
-    }
+		if (isValid && this.settings.customChecks && (typeof this.settings.customChecks[field.name] === 'function' || fieldNameMatch)) {
+			var result = fieldNameMatch ? this.settings.customChecks[substrFieldName[0]](field) : this.settings.customChecks[field.name](field);
+
+			isValid = result.valid;
+			errorType = isValid? undefined : result.errorType;
+		}
 
     (isValid)? this.settings.onValidField(field) : this.settings.onInvalidField(field, errorType);
     return isValid;
